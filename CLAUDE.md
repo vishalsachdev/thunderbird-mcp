@@ -26,6 +26,9 @@ Origin: forked and security-reviewed 2026-07-02 (static review of upstream — c
 - `~/code/mailcorpus/scripts/scan_bulk_senders.py --min-count N --top M` — read-only heuristic scan of the mailcorpus index that ranks senders by bulk/promotional signals (no-reply-style addresses, promo keywords, unsubscribe-link presence, low subject variety) for human review before any delete. Flags false positives itself (real people whose correspondence just repeats subjects) — always sanity-check the list before acting, don't blindly delete everything scored >0.
 - Extracting `List-Unsubscribe`-style footer links from mailcorpus's stored `body_text` (regex for a URL near the word "unsubscribe") is a cheap, zero-token way to surface real unsubscribe links after mail is already deleted from the live account — mailcorpus keeps historical bodies regardless of live-mailbox state. Links from university mail are typically wrapped by a Proofpoint `urldefense.com/v3/__...` redirector — safe to click as-is, it forwards to the real target.
 
+- **`searchMessages` return shape varies:** a plain **array** normally, but the `{messages, totalMatches, offset, limit, hasMore}` envelope only when `offset` is passed. Script code reading `result.messages` without passing `offset` silently sees 0 hits (bit a canvas-mcp session 2026-07-21 against a 143k-message inbox). Handle both: `Array.isArray(r) ? r : r.messages`.
+- **If the `thunderbird` MCP server shows "Connected · tools fetch failed"** (Thunderbird wasn't running when the Claude Code session started), the session can't recover the MCP tools — launch Thunderbird (`open -a Thunderbird`) and drive `mcp-bridge.cjs` as a subprocess instead (same JSON-RPC pattern as `bulk-delete-sender.mjs`; worked example: threaded `replyToMessage` via `searchMessages` → find target Message-ID → reply, review window still enforced).
+
 ## Session Log
 
 ### 2026-07-03
